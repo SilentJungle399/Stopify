@@ -1,17 +1,17 @@
 <template>
 	<div class="ServerInfo">
-		<table v-if="this.$store.state.guild" class="serverinfotable">
+		<table class="serverinfotable">
 			<tr>
 				<td rowspan="2">
-					<img :src="this.$store.state.guild.icon" class="guildicon" alt="" />
+					<img :src="$store.state.user.pfp" class="userpfp" alt="" />
 				</td>
 				<td>
-					<span class="guildname">{{ this.$store.state.guild.name }}</span>
+					<span class="username">{{ $store.state.user.name }}</span>
 				</td>
 			</tr>
 			<tr>
 				<td>
-					<span class="vcname">#{{ this.$store.state.vc.name }}</span>
+					<span class="discrim">#{{ $store.state.user.discrim }}</span>
 				</td>
 			</tr>
 		</table>
@@ -38,26 +38,26 @@ export default {
 	border-radius: 0 0 50px 0;
 }
 
-.guildicon {
+.userpfp {
 	height: 75px;
 	border-radius: 50%;
 }
 
-.vcname {
+.discrim {
 	padding-left: 20px;
 	position: relative;
 	color: #ffffffc4;
 	bottom: 20px;
 }
 
-.guildname {
+.username {
 	padding-left: 20px;
-	font-size: 25px;
+	font-size: 20px;
 	position: relative;
 	bottom: 5px;
 }
 
 .serverinfotable {
-	margin: auto auto auto 70px;
+	margin: auto;
 }
 </style>

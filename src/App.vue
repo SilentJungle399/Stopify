@@ -88,7 +88,6 @@ export default {
 		// 		}
 		// 	}
 		// }
-		this.$store.state.user = "738362958253522976";
 		this.$store.state.tab = "queue";
 		this.$store.state.sid = this.random(40);
 		this.$socket.emit("userAuth", {

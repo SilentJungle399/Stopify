@@ -153,9 +153,7 @@ export default {
 		},
 		handleEvents(audio) {
 			audio.addEventListener("ended", this.songEnded);
-
 			audio.addEventListener("timeupdate", this.timeUpdate);
-
 			audio.addEventListener("error", this.onerror);
 		},
 		onerror(e) {
@@ -224,6 +222,7 @@ export default {
 			this.$store.state.current = {
 				audio: new Audio(arg.formats[0].url),
 				data: arg.videoDetails,
+				start: Date.now(),
 			};
 			this.$store.state.current.audio.play();
 			this.handleEvents(this.$store.state.current.audio);

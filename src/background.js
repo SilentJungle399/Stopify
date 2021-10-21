@@ -10,6 +10,12 @@ import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
 import ytsr from "ytsr";
 import ytdl from "ytdl-core";
+import DiscordRPC from "discord-rpc";
+
+const clientId = "900755240532471888";
+DiscordRPC.register(clientId);
+
+const rpc = new DiscordRPC.Client({ transport: "ipc" });
 
 const isDevelopment = process.env.NODE_ENV !== "production";
 
@@ -60,6 +66,30 @@ ipcMain.on("playUrlReq", (event, arg) => {
 	});
 });
 
+rpc.on("connected", () => {
+	console.log("Connected to ", rpc.user.username);
+});
+
+ipcMain.on("rpcReq", (event, args) => {
+	event.reply("rpcUserConnected", {
+		username: rpc.user.username,
+		discrim: rpc.user.discriminator,
+		avatar:
+			"https://cdn.discordapp.com/avatars/" +
+			rpc.user.id +
+			"/" +
+			rpc.user.avatar,
+	});
+});
+
+ipcMain.on("rpcUpdate", (event, args) => {
+	rpc.setActivity({
+		state: args.channel,
+		details: args.title,
+		endTimestamp: new Date(args.end),
+	});
+});
+
 app.on("activate", () => {
 	if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
@@ -74,8 +104,9 @@ app.on("ready", async () => {
 		}
 	}
 	createWindow();
+	rpc.login({ clientId });
 
-	globalShortcut.register("CommandOrControl+Shift+P", () => {
+	globalShortcut.register("CommandOrControl+Shift+/", () => {
 		app.win.webContents.openDevTools();
 	});
 
