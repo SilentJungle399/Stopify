@@ -1,4 +1,4 @@
 module.exports = {
 	useTabs: true,
-	tabWdith: 4
-}
+	tabWdith: 4,
+};
