@@ -1,5 +1,7 @@
 # Stopify
 
+Majority of the code is recycled from a very old project of mine, so expect random bits of code which has no use.
+
 ## Project setup
 
 ```
@@ -9,21 +11,11 @@ npm install
 ### Compiles and hot-reloads for development
 
 ```
-npm run serve
+npm run electron:serve
 ```
 
-### Compiles and minifies for production
+### Compiles and packages the app for production
 
 ```
-npm run build
+npm run electron:build
 ```
-
-### Lints and fixes files
-
-```
-npm run lint
-```
-
-### Customize configuration
-
-See [Configuration Reference](https://cli.vuejs.org/config/).
