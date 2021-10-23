@@ -60,25 +60,32 @@ ipcRenderer.on("rpcUserConnected", (event, data) => {
 	store.commit("rpcData", data);
 	startRpc();
 });
+ipcRenderer.on("connUpdate", (event, data) => {
+	console.log("Received: ", "connUpdate", data);
+	store.commit("rpcData", data);
+});
 
 function startRpc() {
 	setInterval(() => {
-		if (store.state.current.audio) {
-			const retdata = {
-				title: store.state.current.data.title,
-				channel: store.state.current.data.author.name,
-				length: store.state.current.data.lengthSeconds,
-				end:
-					Date.now() +
-					(parseInt(store.state.current.data.lengthSeconds) -
-						store.state.current.audio.currentTime) *
-						1000,
-				start: store.state.current.start,
-			};
-			console.log("Emitting: ", "rpcUpdate", retdata);
-			ipcRenderer.send("rpcUpdate", retdata);
-		}
-	}, 5000);
+		const retdata = store.state.current.audio
+			? {
+					audio: true,
+					title: store.state.current.data.title,
+					channel: store.state.current.data.author.name,
+					length: store.state.current.data.lengthSeconds,
+					end:
+						Date.now() +
+						(parseInt(store.state.current.data.lengthSeconds) -
+							store.state.current.audio.currentTime) *
+							1000,
+					start: store.state.current.start,
+			  }
+			: {
+					audio: false,
+			  };
+		console.log("Emitting: ", "rpcUpdate", retdata);
+		ipcRenderer.send("rpcUpdate", retdata);
+	}, 1000);
 }
 
 Vue.config.productionTip = true;

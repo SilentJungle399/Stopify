@@ -5,6 +5,7 @@ import {
 	ipcMain,
 	nativeTheme,
 	globalShortcut,
+	Menu,
 } from "electron";
 import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
@@ -16,7 +17,7 @@ const clientId = "900755240532471888";
 DiscordRPC.register(clientId);
 
 const rpc = new DiscordRPC.Client({ transport: "ipc" });
-
+app.rpc = true;
 const isDevelopment = process.env.NODE_ENV !== "production";
 
 protocol.registerSchemesAsPrivileged([
@@ -34,7 +35,45 @@ async function createWindow() {
 		},
 	});
 
-	win.setMenu(null);
+	var menu = Menu.buildFromTemplate([
+		{
+			label: "App",
+			submenu: [
+				{
+					label: "Open devTools",
+					click() {
+						win.webContents.openDevTools();
+					},
+				},
+				{
+					label: "Restart",
+					click() {
+						app.relaunch();
+						app.exit();
+					},
+				},
+				{
+					label: "Exit",
+					click() {
+						app.quit();
+					},
+				},
+			],
+		},
+		{
+			label: "Discord",
+			submenu: [
+				{
+					label: "Connect / Disconnect",
+					click() {
+						app.rpc = !app.rpc;
+					},
+				},
+			],
+		},
+	]);
+	Menu.setApplicationMenu(menu);
+	win.setMenu(menu);
 
 	if (process.env.WEBPACK_DEV_SERVER_URL) {
 		await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL);
@@ -72,21 +111,38 @@ rpc.on("connected", () => {
 
 ipcMain.on("rpcReq", (event, args) => {
 	event.reply("rpcUserConnected", {
-		username: rpc.user.username,
-		discrim: rpc.user.discriminator,
-		avatar:
-			"https://cdn.discordapp.com/avatars/" +
-			rpc.user.id +
-			"/" +
-			rpc.user.avatar,
+		username: app.rpc ? rpc.user.username : "Discord disconnected",
+		discrim: app.rpc ? rpc.user.discriminator : "0000",
+		avatar: app.rpc
+			? "https://cdn.discordapp.com/avatars/" +
+			  rpc.user.id +
+			  "/" +
+			  rpc.user.avatar
+			: "/dummy.png",
 	});
 });
 
 ipcMain.on("rpcUpdate", (event, args) => {
-	rpc.setActivity({
-		state: args.channel,
-		details: args.title,
-		endTimestamp: new Date(args.end),
+	if (args.audio && app.rpc) {
+		rpc.setActivity({
+			conn: app.rpc,
+			state: args.channel,
+			details: args.title,
+			endTimestamp: new Date(args.end),
+		});
+	} else {
+		rpc.clearActivity();
+	}
+
+	event.reply("connUpdate", {
+		username: app.rpc ? rpc.user.username : "Discord disconnected",
+		discrim: app.rpc ? rpc.user.discriminator : "0000",
+		avatar: app.rpc
+			? "https://cdn.discordapp.com/avatars/" +
+			  rpc.user.id +
+			  "/" +
+			  rpc.user.avatar
+			: "/dummy.png",
 	});
 });
 
@@ -105,15 +161,6 @@ app.on("ready", async () => {
 	}
 	createWindow();
 	rpc.login({ clientId });
-
-	globalShortcut.register("CommandOrControl+Shift+/", () => {
-		app.win.webContents.openDevTools();
-	});
-
-	globalShortcut.register("CommandOrControl+R", () => {
-		app.relaunch({ args: process.argv.slice(1).concat(["--relaunch"]) });
-		app.exit(0);
-	});
 });
 
 if (isDevelopment) {
