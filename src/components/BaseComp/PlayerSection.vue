@@ -268,7 +268,7 @@ export default {
 
 .songdata {
 	position: absolute;
-	bottom: 0;
+	bottom: 10px;
 	left: 0;
 }
 
@@ -279,18 +279,18 @@ export default {
 }
 
 .playersection {
-	background-color: #1f1b1b;
+	background-color: var(--player-section);
 	position: absolute;
 	display: flex;
 	bottom: 0;
 	left: 0;
 	right: 0;
 	width: 100%;
-	height: 80px;
+	height: 100px;
 }
 
 .controls {
-	margin: 20px auto 0 auto;
+	margin: auto;
 	display: grid;
 	grid-template-columns: repeat(3, auto);
 	grid-template-rows: repeat(1, 40px);

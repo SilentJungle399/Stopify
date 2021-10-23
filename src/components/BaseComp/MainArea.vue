@@ -233,14 +233,14 @@ export default {
 
 <style>
 .mainarea {
-	background-color: #0f0f0f;
+	background-color: var(--sections);
 	position: absolute;
-	top: 155px;
+	top: 125px;
 	display: flex;
 	padding: 50px 30px 30px 30px;
 	right: 0;
 	width: calc(100% - 435px - 25px);
-	height: calc(100% - 315px);
+	height: calc(100% - 310px);
 	border-radius: 50px 0 0 0;
 }
 
@@ -267,11 +267,12 @@ export default {
 	color: white;
 	border-radius: 62px;
 	padding: 10px;
+	padding-bottom: 7px;
 	transition: all 0.5s;
 }
 
 .backbutton:hover {
-	background: #222;
+	background: #1c172f;
 	cursor: pointer;
 }
 
@@ -291,8 +292,9 @@ export default {
 
 .searchrestrack {
 	padding: 10px 10px 10px 20px;
-	border-radius: 30px;
+	border-radius: 10px;
 	transition: background 0.5s;
+	margin: 10px;
 	display: flex;
 }
 
@@ -303,7 +305,7 @@ export default {
 }
 
 .searchrestrack:hover {
-	background: black;
+	background: #18162b;
 }
 
 .searchrestrack:hover > .searchrescontrols {
@@ -319,6 +321,6 @@ export default {
 }
 
 .searchresaudiocontrol:hover > .playpath {
-	stroke: red;
+	stroke: #626ed8;
 }
 </style>

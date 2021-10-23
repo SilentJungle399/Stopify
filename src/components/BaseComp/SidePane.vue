@@ -1,23 +1,23 @@
 <template>
-	<div class="serverinfo"></div>
+	<div class="sidepane"></div>
 </template>
 
 <script>
 import progress from "@/handlers/progress.js";
 
 export default {
-	name: "ServerInfo",
+	name: "SidePane",
 };
 </script>
 
 <style>
-.serverinfo {
-	background-color: #0f0f0f;
+.sidepane {
+	background-color: var(--sections);
 	position: absolute;
-	top: 155px;
+	top: 125px;
 	left: 0;
 	width: 375px;
-	height: calc(100% - 235px);
+	height: calc(100% - 230px);
 	border-radius: 0 50px 0 0;
 }
 </style>

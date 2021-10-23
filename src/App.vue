@@ -146,8 +146,14 @@ export default {
 <style>
 @import url("https://fonts.googleapis.com/css2?family=Rubik&display=swap");
 
+:root {
+	--sections: #000b1b;
+	--body: #00162a;
+	--player-section: #001122;
+}
+
 body {
-	background: #1b1b1b;
+	background: var(--body);
 	color: rgb(255, 255, 255);
 	font-family: "Rubik", sans-serif;
 }
@@ -158,7 +164,7 @@ body {
 	width: 100%;
 	top: 0;
 	left: 0;
-	background-color: #151516;
+	background-color: var(--body);
 }
 ::-webkit-scrollbar {
 	width: 7px;
@@ -167,18 +173,18 @@ body {
 
 /* Track */
 ::-webkit-scrollbar-track {
-	background: rgb(0 26 26 / 1);
+	background: rgb(13 7 43);
 	border-radius: 10px;
 }
 
 /* Handle */
 ::-webkit-scrollbar-thumb {
-	background: rgb(0 38 38 / 1);
+	background: rgb(9 26 58);
 	border-radius: 10px;
 }
 
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
-	background: rgb(0, 0, 0);
+	background: rgb(0 19 56);
 }
 </style>

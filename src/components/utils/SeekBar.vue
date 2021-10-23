@@ -71,12 +71,12 @@ export default {
 
 <style>
 .seekBar {
-	background: #333;
+	background: #0f1d3c;
 	user-select: none;
 
 	position: fixed;
 	z-index: 1;
-	bottom: 80px;
+	bottom: 100px;
 	left: 0;
 	padding: 1px;
 
@@ -113,7 +113,7 @@ export default {
 
 	position: fixed;
 	z-index: 1;
-	bottom: 80px;
+	bottom: 100px;
 	left: 0;
 	padding: 1px;
 

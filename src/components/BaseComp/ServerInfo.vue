@@ -1,6 +1,6 @@
 <template>
-	<div class="ServerInfo">
-		<table class="serverinfotable">
+	<div class="UserInfo">
+		<table class="UserInfotable">
 			<tr>
 				<td rowspan="2">
 					<img :src="$store.state.user.pfp" class="userpfp" alt="" />
@@ -22,19 +22,19 @@
 import progress from "@/handlers/progress.js";
 
 export default {
-	name: "SearchComp",
+	name: "UserInfo",
 };
 </script>
 
 <style>
-.ServerInfo {
-	background-color: #0f0f0f;
+.UserInfo {
+	background-color: var(--sections);
 	position: absolute;
 	display: flex;
 	top: 0;
 	left: 0;
 	width: 375px;
-	height: 130px;
+	height: 100px;
 	border-radius: 0 0 50px 0;
 }
 
@@ -57,7 +57,7 @@ export default {
 	bottom: 5px;
 }
 
-.serverinfotable {
+.UserInfotable {
 	margin: auto;
 }
 </style>

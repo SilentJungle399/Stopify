@@ -35,31 +35,32 @@ export default {
 
 <style>
 .searchcomp {
-	background-color: #0f0f0f;
+	background-color: var(--sections);
 	position: absolute;
 	top: 0;
 	display: flex;
 	right: 0;
 	width: calc(100% - 375px - 25px);
-	height: 130px;
+	height: 100px;
 	border-radius: 0 0 0 50px;
 }
 
 .searchinput {
 	margin: auto;
 	border: none;
-	background: #0f0f0f;
-	border-bottom: solid #ffffff4f 1.5px;
+	background: var(--sections);
+	border-bottom: solid #1a5377 1.5px;
 	color: #ffffffc4;
 	outline: none;
-	width: 450px;
-	padding-left: 5px;
+	width: 650px;
+	padding-left: 15px;
+	border-radius: 10px 10px 0px 0px;
 	height: 40px;
 	font-size: 20px;
 	transition: background 0.5s;
 }
 
 .searchinput:focus {
-	background: black;
+	background: #051027;
 }
 </style>
