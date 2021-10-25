@@ -11,7 +11,9 @@
 			<div class="searchrestrack" :key="track.url" v-for="track in searchres">
 				<img
 					:src="`https://img.youtube.com/vi/${
-						track.url.split(/\?v=/g)[1]
+						track.url
+							? track.url.split(/\?v=/g)[1]
+							: track.video_url.split(/\?v=/g)[1]
 					}/0.jpg`"
 					alt=""
 					class="searchresthumbnail"
@@ -22,7 +24,7 @@
 				</div>
 				<div class="searchrescontrols">
 					<span class="searchresaudiocontrolcontainer" @click="play(track)">
-						<playicon class="searchresaudiocontrol"></playicon>
+						<playicon class="searchresaudiocontrol audiocontrol"></playicon>
 					</span>
 				</div>
 			</div>
@@ -39,7 +41,9 @@
 			>
 				<img
 					:src="`https://img.youtube.com/vi/${
-						track.url.split(/\?v=/g)[1]
+						track.url
+							? track.url.split(/\?v=/g)[1]
+							: track.video_url.split(/\?v=/g)[1]
 					}/0.jpg`"
 					alt=""
 					class="searchresthumbnail"
@@ -88,7 +92,7 @@ export default {
 				console.log("Committing:", "newQueueSong", track);
 			} else {
 				const emitData = {
-					song: track.url,
+					song: track.url ? track.url : track.video_url,
 				};
 				ipcRenderer.send("playUrlReq", emitData);
 				console.log("Emitting:", "playUrlReq", emitData);
@@ -170,6 +174,7 @@ export default {
 				"ended",
 				this.songEnded
 			);
+			this.$store.state.controls.paused = true;
 			this.nextSong();
 		},
 		timeUpdate(e) {
@@ -182,10 +187,17 @@ export default {
 		nextSong() {
 			this.$store.state.current.audio = null;
 			this.$store.commit("progInc", 0);
-			this.$store.state.current.data = null;
 
-			if (this.$store.state.queue.length > 0) {
-				this.play(this.$store.state.queue.shift());
+			if (this.$store.state.controls.repeat === 2) {
+				this.play(this.$store.state.current.data);
+			} else if (this.$store.state.queue.length > 0) {
+				if (this.$store.state.controls.repeat === 0) {
+					this.play(this.$store.state.queue.shift());
+				} else {
+					this.play(this.$store.state.queue.shift());
+					this.$store.state.queue.push(this.$store.state.current.data);
+				}
+				this.$store.state.current.data = null;
 			}
 		},
 	},
@@ -211,22 +223,26 @@ export default {
 		},
 	},
 	mounted() {
-		ipcRenderer.on("searchResult", (event, arg) => {
-			console.log("Incoming:", "searchResult", arg);
-			this.searchres = arg.items.filter((a) => a.type === "video");
-			this.switchTab("search");
-		});
-
-		ipcRenderer.on("urlReqResult", (event, arg) => {
-			console.log("Incoming:", "urlReqResult", arg);
-			this.$store.state.current = {
-				audio: new Audio(arg.formats[0].url),
-				data: arg.videoDetails,
-				start: Date.now(),
-			};
-			this.$store.state.current.audio.play();
-			this.handleEvents(this.$store.state.current.audio);
-		});
+		if (!ipcRenderer.eventNames().includes("searchResult")) {
+			ipcRenderer.on("searchResult", (event, arg) => {
+				console.log("Incoming:", "searchResult", arg);
+				this.searchres = arg.items.filter((a) => a.type === "video");
+				this.switchTab("search");
+			});
+		}
+		if (!ipcRenderer.eventNames().includes("urlReqResult")) {
+			ipcRenderer.on("urlReqResult", (event, arg) => {
+				console.log("Incoming:", "urlReqResult", arg);
+				this.$store.state.current = {
+					audio: new Audio(arg.formats[0].url),
+					data: arg.videoDetails,
+					start: Date.now(),
+				};
+				this.$store.state.current.audio.play();
+				this.$store.state.controls.paused = false;
+				this.handleEvents(this.$store.state.current.audio);
+			});
+		}
 	},
 };
 </script>
@@ -316,6 +332,10 @@ export default {
 	transition: stroke 0.5s;
 }
 
+.searchresaudiocontrol {
+	fill: white;
+	stroke: white;
+}
 .searchresaudiocontrol:hover {
 	cursor: pointer;
 }
