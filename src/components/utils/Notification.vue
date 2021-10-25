@@ -27,8 +27,8 @@ export default {
 	top: 10px;
 	border-radius: 5px;
 	border-style: solid;
-	background-color: #333;
-	border-left-color: #68db6a;
+	background-color: var(--body);
+	border-left-color: #463890;
 	border-left-width: 5px;
 	border-top: none;
 	overflow-wrap: break-word;
