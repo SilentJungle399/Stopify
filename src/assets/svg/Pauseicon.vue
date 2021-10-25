@@ -1,7 +1,12 @@
 <template>
-	<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-	<rect x="4" y="3" width="5" height="14" fill="white"/>
-	<rect x="11" y="3" width="5" height="14" fill="white"/>
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		height="24px"
+		viewBox="0 0 24 24"
+		width="24px"
+	>
+		<path
+			d="M8 19c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2s-2 .9-2 2v10c0 1.1.9 2 2 2zm6-12v10c0 1.1.9 2 2 2s2-.9 2-2V7c0-1.1-.9-2-2-2s-2 .9-2 2z"
+		/>
 	</svg>
-
 </template>

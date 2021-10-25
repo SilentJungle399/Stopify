@@ -1,4 +1,12 @@
 <template>
-	<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path class="playpath" d="M4 19.1169V2.8831C4 2.49445 4.42399 2.25439 4.75725 2.45435L18.2854 10.5713C18.6091 10.7655 18.6091 11.2345 18.2854 11.4287L4.75725 19.5457C4.42399 19.7456 4 19.5056 4 19.1169Z" stroke="white" stroke-width="1"/>
+	<svg
+		xmlns="http://www.w3.org/2000/svg"
+		height="24px"
+		viewBox="0 0 24 24"
+		width="24px"
+	>
+		<path
+			d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18c.62-.39.62-1.29 0-1.69L9.54 5.98C8.87 5.55 8 6.03 8 6.82z"
+		/>
 	</svg>
 </template>
