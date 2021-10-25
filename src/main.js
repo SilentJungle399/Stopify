@@ -38,6 +38,11 @@ const store = new Vuex.Store({
 			discrim: "0000",
 			pfp: "/dummy.png",
 		},
+		controls: {
+			shuffle: 0,
+			repeat: 0,
+			paused: true,
+		},
 	},
 	mutations: {
 		progInc(state, val) {
@@ -56,12 +61,12 @@ const store = new Vuex.Store({
 
 ipcRenderer.send("rpcReq", {});
 ipcRenderer.on("rpcUserConnected", (event, data) => {
-	console.log("Received rpc data: ", data);
+	// console.log("Received rpc data: ", data);
 	store.commit("rpcData", data);
 	startRpc();
 });
 ipcRenderer.on("connUpdate", (event, data) => {
-	console.log("Received: ", "connUpdate", data);
+	// console.log("Received: ", "connUpdate", data);
 	store.commit("rpcData", data);
 });
 
@@ -83,7 +88,7 @@ function startRpc() {
 			: {
 					audio: false,
 			  };
-		console.log("Emitting: ", "rpcUpdate", retdata);
+		// console.log("Emitting: ", "rpcUpdate", retdata);
 		ipcRenderer.send("rpcUpdate", retdata);
 	}, 1000);
 }

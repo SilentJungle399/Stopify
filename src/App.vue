@@ -2,12 +2,12 @@
 	<div id="app">
 		<div class="supported" v-if="!unsupported">
 			<!-- Application here -->
-			<Notification :msg="notif"></Notification>
-			<ServerInfo></ServerInfo>
-			<SearchComp></SearchComp>
-			<SidePane></SidePane>
-			<MainArea></MainArea>
-			<PlayerSection :preTrack="track"></PlayerSection>
+			<Notification @makealert="makealert" :msg="notif"></Notification>
+			<ServerInfo @makealert="makealert"></ServerInfo>
+			<SearchComp @makealert="makealert"></SearchComp>
+			<SidePane @makealert="makealert"></SidePane>
+			<MainArea ref="mainarea" @makealert="makealert"></MainArea>
+			<PlayerSection @makealert="makealert" :preTrack="track"></PlayerSection>
 		</div>
 		<div v-else class="unsupported">
 			<h3>Unfortunately, your device is not supported for the webapp.</h3>
@@ -55,7 +55,6 @@ export default {
 			document.getElementById("notif").style.opacity = 1;
 			this.curnotif = setTimeout(function () {
 				document.getElementById("notif").style.opacity = 0;
-				document.getElementById("notif").style.zIndex = 0;
 			}, 2500);
 		},
 		checksize() {
@@ -156,6 +155,7 @@ body {
 	background: var(--body);
 	color: rgb(255, 255, 255);
 	font-family: "Rubik", sans-serif;
+	user-select: none;
 }
 
 .progressing {

@@ -38,17 +38,33 @@
 		</div>
 		<div class="controls">
 			<span class="controlbutton" @click="repeat"
-				><repeaticon class="audiocontrol"></repeaticon
+				><repeaticon></repeaticon
 			></span>
-			<span class="controlbutton" v-if="player.paused" @click="play"
-				><playicon class="audiocontrol" style="padding: 8px"></playicon
+			<span class="controlbutton" @click="ff(-10)">
+				<backw class="audiocontrol"></backw>
+			</span>
+			<span class="controlbutton" @click="skip(false)">
+				<SkipPrevious class="audiocontrol"></SkipPrevious>
+			</span>
+			<span
+				class="controlbutton"
+				v-if="$store.state.controls.paused"
+				@click="playpause"
+				><playicon class="audiocontrol"></playicon
 			></span>
-			<span class="controlbutton" v-else @click="pause"
-				><pauseicon class="audiocontrol" style="padding: 8px"></pauseicon
+			<span class="controlbutton" v-else @click="playpause"
+				><pauseicon class="audiocontrol"></pauseicon
 			></span>
-			<span class="controlbutton" @click="shuffle"
-				><shuffleicon class="audiocontrol"></shuffleicon
-			></span>
+			<span class="controlbutton" @click="skip(true)">
+				<SkipNext class="audiocontrol"></SkipNext>
+			</span>
+			<span class="controlbutton" @click="ff(10)">
+				<forw class="audiocontrol"></forw>
+			</span>
+
+			<span class="controlbutton" @click="shuffle">
+				<shuffleicon></shuffleicon>
+			</span>
 		</div>
 	</div>
 </template>
@@ -60,6 +76,11 @@ import repeaticon from "@/assets/svg/Repeaticon.vue";
 import shuffleicon from "@/assets/svg/Shuffleicon.vue";
 import pauseicon from "@/assets/svg/Pauseicon.vue";
 import SeekBar from "@/components/utils/SeekBar.vue";
+import SkipNext from "@/assets/svg/SkipNext.vue";
+import SkipPrevious from "@/assets/svg/SkipPrevious.vue";
+import forw from "@/assets/svg/forw.vue";
+import backw from "@/assets/svg/backw.vue";
+import { ipcRenderer } from "electron";
 
 export default {
 	name: "PlayerSection",
@@ -74,6 +95,10 @@ export default {
 		shuffleicon,
 		pauseicon,
 		SeekBar,
+		SkipNext,
+		SkipPrevious,
+		forw,
+		backw,
 	},
 	data() {
 		return {
@@ -87,49 +112,68 @@ export default {
 	},
 	mounted() {},
 	methods: {
-		visibilityUpdate(event) {
-			if (!this.$store.state.current.data) return;
-			const emitData = {
-				user_id: this.$store.state.user,
-				server_id: this.$store.state.guild.id,
-			};
-			this.$socket.emit("playerPosReq", emitData);
-		},
 		doSeek(val) {
-			if (!this.$store.state.current.data) return;
+			if (!this.$store.state.current.data)
+				return this.$emit("makealert", "Nothing is being played right now!");
 			const pos = (this.$store.state.current.audio.duration * val) / 100;
 
-			this.$store.state.current.audio.currentTime = pos;
+			this.$store.state.current.audio.currentTime = pos > 0 ? pos : 0;
+		},
+		ff(val) {
+			const pos = this.$store.state.current.audio.currentTime + val;
+			this.$store.state.current.audio.currentTime = pos > 0 ? pos : 0;
+		},
+		skip(s) {
+			if (s) {
+				this.$store.state.controls.paused = true;
+				this.$store.state.current.audio.pause();
+				this.$store.state.current.audio = null;
+				this.$store.commit("progInc", 0);
+
+				if (this.$store.state.controls.repeat === 2) {
+					this.$parent.$refs.mainarea.play(this.$store.state.current.data);
+				} else if (this.$store.state.queue.length > 0) {
+					if (this.$store.state.controls.repeat === 0) {
+						this.$parent.$refs.mainarea.play(this.$store.state.queue.shift());
+					} else {
+						this.$parent.$refs.mainarea.play(this.$store.state.queue.shift());
+						this.$store.state.queue.push(this.$store.state.current.data);
+					}
+					this.$store.state.current.data = null;
+				}
+			} else {
+				this.$store.state.current.audio.currentTime = 0;
+			}
 		},
 		repeat() {
-			if (!this.$store.state.current.data) return;
-			const emitData = {
-				controls: {
-					toggle: "repeat",
-				},
-				user_id: this.$store.state.user,
-				server_id: this.$store.state.guild.id,
-			};
-			this.$socket.emit("playerControl", emitData);
-			console.log("Emitting:", "playerControl", emitData);
+			this.$store.state.controls.repeat =
+				this.$store.state.controls.repeat === 0
+					? 1
+					: this.$store.state.controls.repeat === 1
+					? 2
+					: 0;
+			this.$emit(
+				"makealert",
+				this.$store.state.controls.repeat === 1
+					? "Enabled queue repeat!"
+					: this.$store.state.controls.repeat === 2
+					? "Repeating current song!"
+					: "Disabled Repeat."
+			);
 		},
-		play() {
+		playpause() {
 			if (!this.$store.state.current.data) {
-				const emitData = {
-					song: "walls could talk",
-					user_id: this.$store.state.user,
-					server_id: this.$store.state.guild.id,
-				};
-				this.$socket.emit("songReq", emitData);
-				console.log("Emitting:", "songReq", emitData);
-			} else if (this.$store.state.current.data && this.player.paused) {
-				const emitData = {
-					pause: false,
-					user_id: this.$store.state.user,
-					server_id: this.$store.state.guild.id,
-				};
-				this.$socket.emit("pauseReq", emitData);
-				console.log("Emitting:", "pauseReq", emitData);
+				this.$emit("makealert", "Nothing is being played right now!");
+			} else if (this.$store.state.current.data) {
+				if (this.$store.state.current.audio.paused) {
+					this.$store.state.current.audio.play();
+					this.$emit("makealert", "Resumed the song!");
+					this.$store.state.controls.paused = false;
+				} else {
+					this.$store.state.current.audio.pause();
+					this.$emit("makealert", "Paused the song!");
+					this.$store.state.controls.paused = true;
+				}
 			}
 		},
 		pause() {
@@ -143,41 +187,14 @@ export default {
 			console.log("Emitting:", "pauseReq", emitData);
 		},
 		shuffle() {
-			if (!this.$store.state.current.data) return;
-			const emitData = {
-				controls: {
-					toggle: "shuffle",
-				},
-				user_id: this.$store.state.user,
-				server_id: this.$store.state.guild.id,
-			};
-			this.$socket.emit("playerControl", emitData);
-			console.log("Emitting:", "playerControl", emitData);
-		},
-		continueProgressBar() {
-			const comp = this;
-			this.barInterval = setInterval(function () {
-				if (comp.player.paused) {
-					clearInterval(comp.barInterval);
-					this.seekable = false;
-				} else if (comp.progress >= 100) {
-					comp.progress = 100;
-					clearInterval(comp.barInterval);
-					this.seekable = false;
-				} else {
-					if (comp.progress >= 100) {
-						if (!this.$store.state.current.data) return;
-						const emitData = {
-							user_id: this.$store.state.user,
-							server_id: this.$store.state.guild.id,
-						};
-						this.$socket.emit("playerPosReq", emitData);
-					} else {
-						comp.progress += 0.01;
-					}
-					this.seekable = true;
-				}
-			}, this.$store.state.current.data.duration / 10000);
+			this.$store.state.controls.shuffle =
+				this.$store.state.controls.shuffle === 1 ? 0 : 1;
+			this.$emit(
+				"makealert",
+				this.$store.state.controls.shuffle === 1
+					? "Enabled shuffle!"
+					: "Disabled shuffle."
+			);
 		},
 	},
 	sockets: {
@@ -191,14 +208,14 @@ export default {
 		},
 		newPause(data) {
 			console.log("Incoming:", "newPause", data);
-			if (data.pause && !this.player.paused) {
+			if (data.pause && !this.$store.state.controls.paused) {
 				if (this.barInterval) {
-					this.player.paused = true;
+					this.$store.state.controls.paused = true;
 					clearInterval(this.barInterval);
 					this.seekable = false;
 				}
-			} else if (!data.pause && this.player.paused) {
-				this.player.paused = false;
+			} else if (!data.pause && this.$store.state.controls.paused) {
+				this.$store.state.controls.paused = false;
 				this.seekable = true;
 				this.continueProgressBar();
 			}
@@ -207,7 +224,7 @@ export default {
 			console.log("Incoming:", "newTrack", data);
 			this.$store.state.current.data = data.track;
 			this.progress = 0;
-			this.player.paused = false;
+			this.$store.state.controls.paused = false;
 			this.seekable = true;
 			this.continueProgressBar();
 		},
@@ -215,7 +232,7 @@ export default {
 			console.log("Incoming:", "newTrackEnd", data);
 			clearInterval(this.barInterval);
 			this.progress = 100;
-			this.player.paused = true;
+			this.$store.state.controls.paused = true;
 			this.seekable = false;
 			this.$store.state.current.data = null;
 		},
@@ -242,7 +259,7 @@ export default {
 					if (this.preTrack.duration != this.preTrack.position) {
 						this.progress =
 							(this.preTrack.position * 100) / this.preTrack.duration;
-						if (!this.$store.state.player.paused) {
+						if (!this.$store.state.$store.state.controls.paused) {
 							this.continueProgressBar();
 							this.seekable = true;
 						}
@@ -291,21 +308,23 @@ export default {
 
 .controls {
 	margin: auto;
-	display: grid;
-	grid-template-columns: repeat(3, auto);
-	grid-template-rows: repeat(1, 40px);
+	display: flex;
 }
 
 .audiocontrol {
 	padding: 10px;
+	fill: white;
+	transition: all 0.5s;
 }
 
 .controlbutton {
 	border-radius: 50px;
+	transition: all 0.25s;
+	font-size: 0;
 }
 
 .controlbutton:hover {
-	background: #111;
+	background: #18162b;
 	cursor: pointer;
 }
 </style>
