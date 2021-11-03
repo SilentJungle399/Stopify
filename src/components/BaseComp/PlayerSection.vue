@@ -66,11 +66,20 @@
 				<shuffleicon></shuffleicon>
 			</span>
 		</div>
+		<div class="extrabuttons">
+			<span
+				class="controlbutton"
+				@mouseenter="discordHover(true)"
+				@mouseleave="discordHover(false)"
+				v-if="$store.state.members.length > 0"
+			>
+				<discord class="audiocontrol"></discord>
+			</span>
+		</div>
 	</div>
 </template>
 
 <script>
-import progress from "@/handlers/progress.js";
 import playicon from "@/assets/svg/Playicon.vue";
 import repeaticon from "@/assets/svg/Repeaticon.vue";
 import shuffleicon from "@/assets/svg/Shuffleicon.vue";
@@ -80,7 +89,7 @@ import SkipNext from "@/assets/svg/SkipNext.vue";
 import SkipPrevious from "@/assets/svg/SkipPrevious.vue";
 import forw from "@/assets/svg/forw.vue";
 import backw from "@/assets/svg/backw.vue";
-import { ipcRenderer } from "electron";
+import discord from "@/assets/svg/discord.vue";
 
 export default {
 	name: "PlayerSection",
@@ -99,6 +108,7 @@ export default {
 		SkipPrevious,
 		forw,
 		backw,
+		discord,
 	},
 	data() {
 		return {
@@ -112,6 +122,11 @@ export default {
 	},
 	mounted() {},
 	methods: {
+		discordHover(state) {
+			const elem = document.getElementById("membersdiv");
+			elem.style.opacity = state ? "1" : "0";
+			elem.style.bottom = state ? "0" : "-10%";
+		},
 		doSeek(val) {
 			if (!this.$store.state.current.data)
 				return this.$emit("makealert", "Nothing is being played right now!");
@@ -176,16 +191,6 @@ export default {
 				}
 			}
 		},
-		pause() {
-			if (!this.$store.state.current.data) return;
-			const emitData = {
-				pause: true,
-				user_id: this.$store.state.user,
-				server_id: this.$store.state.guild.id,
-			};
-			this.$socket.emit("pauseReq", emitData);
-			console.log("Emitting:", "pauseReq", emitData);
-		},
 		shuffle() {
 			this.$store.state.controls.shuffle =
 				this.$store.state.controls.shuffle === 1 ? 0 : 1;
@@ -195,77 +200,6 @@ export default {
 					? "Enabled shuffle!"
 					: "Disabled shuffle."
 			);
-		},
-	},
-	sockets: {
-		newSeek(data) {
-			if (!this.$store.state.current.data) return;
-			this.$store.commit(
-				"progInc",
-				(data.seek * 100) / this.$store.state.current.data.duration
-			);
-			this.seekable = true;
-		},
-		newPause(data) {
-			console.log("Incoming:", "newPause", data);
-			if (data.pause && !this.$store.state.controls.paused) {
-				if (this.barInterval) {
-					this.$store.state.controls.paused = true;
-					clearInterval(this.barInterval);
-					this.seekable = false;
-				}
-			} else if (!data.pause && this.$store.state.controls.paused) {
-				this.$store.state.controls.paused = false;
-				this.seekable = true;
-				this.continueProgressBar();
-			}
-		},
-		newTrack(data) {
-			console.log("Incoming:", "newTrack", data);
-			this.$store.state.current.data = data.track;
-			this.progress = 0;
-			this.$store.state.controls.paused = false;
-			this.seekable = true;
-			this.continueProgressBar();
-		},
-		newTrackEnd(data) {
-			console.log("Incoming:", "newTrackEnd", data);
-			clearInterval(this.barInterval);
-			this.progress = 100;
-			this.$store.state.controls.paused = true;
-			this.seekable = false;
-			this.$store.state.current.data = null;
-		},
-		newVoiceState(data) {
-			console.log("Incoming:", "newVoiceState", data);
-			if (data.guild) {
-				this.$store.state.guild = data.guild;
-			} else {
-				this.$store.state.guild = null;
-			}
-			if (data.vc) {
-				this.$store.state.vc = data.vc;
-			} else {
-				this.$store.state.vc = null;
-			}
-		},
-	},
-	watch: {
-		preTrack(after, before) {
-			this.$store.state.current.data = this.preTrack;
-			this.player = this.$store.state.player;
-			if (this.preTrack) {
-				if (this.preTrack.duration) {
-					if (this.preTrack.duration != this.preTrack.position) {
-						this.progress =
-							(this.preTrack.position * 100) / this.preTrack.duration;
-						if (!this.$store.state.$store.state.controls.paused) {
-							this.continueProgressBar();
-							this.seekable = true;
-						}
-					}
-				}
-			}
 		},
 	},
 };
@@ -326,5 +260,13 @@ export default {
 .controlbutton:hover {
 	background: #18162b;
 	cursor: pointer;
+}
+
+.extrabuttons {
+	position: absolute;
+	bottom: 30px;
+	right: 20px;
+	margin: auto;
+	display: flex;
 }
 </style>
