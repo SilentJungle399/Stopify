@@ -3,10 +3,15 @@
 		<div class="supported" v-if="!unsupported">
 			<!-- Application here -->
 			<Notification @makealert="makealert" :msg="notif"></Notification>
-			<ServerInfo @makealert="makealert"></ServerInfo>
-			<SearchComp @makealert="makealert"></SearchComp>
-			<SidePane @makealert="makealert"></SidePane>
-			<MainArea ref="mainarea" @makealert="makealert"></MainArea>
+			<div class="leftsidebar">
+				<UserInfo @makealert="makealert"></UserInfo>
+				<hr class="sidepanedivider" />
+				<SidePane @makealert="makealert"></SidePane>
+			</div>
+
+			<div class="apparea">
+				<MainArea ref="mainarea" @makealert="makealert"></MainArea>
+			</div>
 			<PlayerSection @makealert="makealert" :preTrack="track"></PlayerSection>
 		</div>
 		<div v-else class="unsupported">
@@ -18,18 +23,16 @@
 <script>
 import Notification from "@/components/utils/Notification.vue";
 import progress from "@/handlers/progress.js";
-import ServerInfo from "@/components/BaseComp/ServerInfo.vue";
-import SearchComp from "@/components/BaseComp/SearchComp.vue";
-import SidePane from "@/components/BaseComp/SidePane.vue";
-import MainArea from "@/components/BaseComp/MainArea.vue";
+import UserInfo from "@/components/BaseComp/SideBar/UserInfo.vue";
+import SidePane from "@/components/BaseComp/SideBar/SidePane.vue";
+import MainArea from "@/components/BaseComp/AppArea/MainArea.vue";
 import PlayerSection from "@/components/BaseComp/PlayerSection.vue";
 
 export default {
 	name: "App",
 	components: {
 		Notification,
-		ServerInfo,
-		SearchComp,
+		UserInfo,
 		SidePane,
 		MainArea,
 		PlayerSection,
@@ -68,70 +71,18 @@ export default {
 				this.unsupported = true;
 			}
 		},
-		random(length, randomString = "") {
-			randomString += Math.random().toString(36).substr(2, length);
-			if (randomString.length > length) return randomString.slice(0, length);
-			return this.random(length, randomString);
-		},
 	},
 	mounted() {
-		// if (!this.loggedin) {
-		// 	if (this.$route.path === "/callback") {
-		// 		this.$socket.emit("validateCallback", {
-		// 			code: this.$route.query.code
-		// 		})
-		// 	} else {
-		// 		const token = window.localStorage.getItem("token")
-		// 		if (!token) {
-		// 			window.location.href = "https://discord.com/api/oauth2/authorize?client_id=740568766198448190&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fcallback&response_type=code&scope=identify"
-		// 		}
-		// 	}
-		// }
 		this.$store.state.tab = "queue";
-		this.$store.state.sid = this.random(40);
-		this.$socket.emit("userAuth", {
-			user: this.$store.state.user,
-			sid: this.$store.state.sid,
-		});
-		if (window.innerWidth > 1000) {
-			this.unsupported = false;
-			progress.done();
-		} else {
-			this.unsupported = true;
-			progress.done();
-		}
-
-		if (this.$route.fullPath === "/") {
-			progress.done();
-		}
-	},
-	sockets: {
-		callbackValidation(data) {
-			if (data.valid) {
-				window.localStorage.set("token", data.token);
-				const add = "";
-				if (this.$route.path !== `/${add}`) {
-					this.$route.push({
-						path: `/${add}`,
-					});
-				}
+		setTimeout(() => {
+			if (window.innerWidth > 1000) {
+				this.unsupported = false;
+				progress.done();
 			} else {
-				const add = "login/404";
-				if (this.$route.path !== `/${add}`) {
-					this.$route.push({
-						path: `/${add}`,
-					});
-				}
+				this.unsupported = true;
+				progress.done();
 			}
-		},
-		playerUpdate(data) {
-			console.log(`Recieved:`, "playerUpdate", data);
-			this.$store.state.guild = data.guild;
-			this.$store.state.player = data.player.status;
-			this.$store.state.queue = data.player.queue;
-			this.$store.state.vc = data.voice;
-			this.track = data.player.song;
-		},
+		}, 3000);
 	},
 	created() {
 		window.addEventListener("resize", this.checksize);
@@ -151,11 +102,53 @@ export default {
 	--player-section: #001122;
 }
 
+* {
+	transition: all 0.5s;
+}
+
 body {
 	background: var(--body);
 	color: rgb(255, 255, 255);
 	font-family: "Rubik", sans-serif;
 	user-select: none;
+}
+
+.sidepanedivider {
+	position: relative;
+	top: 60px;
+	background: #191944;
+	border-color: #191944;
+	height: 2px;
+	width: 90%;
+}
+
+.leftsidebar {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 375px;
+	background: var(--sections);
+	height: calc(100% - 100px);
+}
+
+.apparea {
+	position: absolute;
+	top: 0;
+	left: 375px;
+	width: calc(100% - 375px);
+	background: var(--body);
+	height: calc(100% - 100px);
+}
+
+@media only screen and (max-width: 1300px) {
+	.leftsidebar {
+		width: 300px;
+	}
+
+	.apparea {
+		left: 300px;
+		width: calc(100% - 300px);
+	}
 }
 
 .progressing {
