@@ -1,24 +1,9 @@
 import Vue from "vue";
 import App from "./App.vue";
-import router from "./handlers/router.js";
-import io from "socket.io-client";
-import VueSocketIO from "vue-socket.io";
 import NProgress from "nprogress";
 import Vuex from "vuex";
 
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTimes, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { ipcRenderer } from "electron";
-//import { faTimesCircle } from '@fortawesome/free-regular-svg-icons'
-
-Vue.component("fontAws", FontAwesomeIcon);
-
-Vue.use(
-	new VueSocketIO({
-		connection: io("https://socketio-js-test.asilentjungle.repl.co"),
-	})
-);
 
 Vue.use(Vuex);
 
@@ -36,13 +21,15 @@ const store = new Vuex.Store({
 		user: {
 			name: "Discord not detected",
 			discrim: "0000",
-			pfp: "/dummy.png",
+			pfp: "https://cdn.discordapp.com/attachments/542672943872999424/903177673797402654/dummy.png",
 		},
 		controls: {
 			shuffle: 0,
 			repeat: 0,
 			paused: true,
 		},
+		joinedParty: false,
+		members: [],
 	},
 	mutations: {
 		progInc(state, val) {
@@ -56,17 +43,35 @@ const store = new Vuex.Store({
 			state.user.discrim = data.discrim;
 			state.user.pfp = data.avatar;
 		},
+		switchTab(state, val) {
+			state.tab = val;
+		},
+		addMember(state, data) {
+			state.members.push(data);
+		},
 	},
+});
+
+ipcRenderer.on("newMemberJoin", (e, d) => {
+	store.commit("addMember", d);
+	if (store.state.current.audio) {
+		ipcRenderer.send("memberPlayerUpdate", {
+			id: d.id,
+			data: store.state.current.data,
+			current: store.state.current.audio.currentTime,
+			start: Date.now(),
+		});
+	}
+	console.log("Received: newMemberJoin", d);
 });
 
 ipcRenderer.send("rpcReq", {});
 ipcRenderer.on("rpcUserConnected", (event, data) => {
-	// console.log("Received rpc data: ", data);
 	store.commit("rpcData", data);
 	startRpc();
 });
+
 ipcRenderer.on("connUpdate", (event, data) => {
-	// console.log("Received: ", "connUpdate", data);
 	store.commit("rpcData", data);
 });
 
@@ -84,14 +89,27 @@ function startRpc() {
 							store.state.current.audio.currentTime) *
 							1000,
 					start: store.state.current.start,
+					members: store.state.members,
+					current: store.state.current.audio.currentTime,
 			  }
 			: {
 					audio: false,
+					members: store.state.members,
+					current: 0,
 			  };
-		// console.log("Emitting: ", "rpcUpdate", retdata);
-		ipcRenderer.send("rpcUpdate", retdata);
+		ipcRenderer.send("updateEvent", retdata);
 	}, 1000);
 }
+
+ipcRenderer.on("timeUpdateEvent", (e, d) => {
+	if (
+		store.state.current.audio.currentTime - d.current > 2 ||
+		store.state.current.audio.currentTime - d.current < -2
+	) {
+		console.log("Received: timeUpdateEvent", d);
+		store.state.current.audio.currentTime = d.current;
+	}
+});
 
 Vue.config.productionTip = true;
 
@@ -99,6 +117,5 @@ NProgress.start();
 
 new Vue({
 	render: (h) => h(App),
-	router: router,
 	store: store,
 }).$mount("#app");
