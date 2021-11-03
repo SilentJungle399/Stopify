@@ -1,28 +1,21 @@
-import {
-	app,
-	protocol,
-	BrowserWindow,
-	ipcMain,
-	nativeTheme,
-	globalShortcut,
-	Menu,
-} from "electron";
-import { createProtocol } from "vue-cli-plugin-electron-builder/lib";
+import { app, BrowserWindow, Menu } from "electron";
 import installExtension, { VUEJS_DEVTOOLS } from "electron-devtools-installer";
-import ytsr from "ytsr";
-import ytdl from "ytdl-core";
-import DiscordRPC from "discord-rpc";
+import menu from "./backend/menu";
+import rpc from "./backend/rpc";
+import socket from "./backend/socket";
+import "./backend/ipcHandler";
 
-const clientId = "900755240532471888";
-DiscordRPC.register(clientId);
-
-const rpc = new DiscordRPC.Client({ transport: "ipc" });
 app.rpc = true;
 const isDevelopment = process.env.NODE_ENV !== "production";
 
-protocol.registerSchemesAsPrivileged([
-	{ scheme: "stopify", privileges: { secure: true, standard: true } },
-]);
+app.setAsDefaultProtocolClient("stopify");
+
+function logEverywhere(s) {
+	console.log(s);
+	if (app.win && app.win.webContents) {
+		app.win.webContents.executeJavaScript(`console.log("${s}")`);
+	}
+}
 
 async function createWindow() {
 	const win = new BrowserWindow({
@@ -35,51 +28,13 @@ async function createWindow() {
 		},
 	});
 
-	var menu = Menu.buildFromTemplate([
-		{
-			label: "App",
-			submenu: [
-				{
-					label: "Open devTools",
-					click() {
-						win.webContents.openDevTools();
-					},
-				},
-				{
-					label: "Restart",
-					click() {
-						app.relaunch();
-						app.exit();
-					},
-				},
-				{
-					label: "Exit",
-					click() {
-						app.quit();
-					},
-				},
-			],
-		},
-		{
-			label: "Discord",
-			submenu: [
-				{
-					label: "Connect / Disconnect",
-					click() {
-						app.rpc = !app.rpc;
-					},
-				},
-			],
-		},
-	]);
 	Menu.setApplicationMenu(menu);
 	win.setMenu(menu);
 
 	if (process.env.WEBPACK_DEV_SERVER_URL) {
 		await win.loadURL(process.env.WEBPACK_DEV_SERVER_URL);
 	} else {
-		createProtocol("stopify");
-		win.loadURL("stopify://./index.html");
+		win.loadURL(`file://${__dirname}/index.html`);
 	}
 
 	app.win = win;
@@ -91,66 +46,42 @@ app.on("window-all-closed", () => {
 	}
 });
 
-ipcMain.on("songSearchReq", (event, arg) => {
-	ytsr(arg.song, {
-		limit: 20,
-	}).then((result) => {
-		event.reply("searchResult", result);
-	});
-});
-
-ipcMain.on("playUrlReq", (event, arg) => {
-	ytdl.getInfo(arg.song).then((result) => {
-		event.reply("urlReqResult", result);
-	});
-});
-
-rpc.on("connected", () => {
-	console.log("Connected to ", rpc.user.username);
-});
-
-ipcMain.on("rpcReq", (event, args) => {
-	event.reply("rpcUserConnected", {
-		username: app.rpc ? rpc.user.username : "Discord disconnected",
-		discrim: app.rpc ? rpc.user.discriminator : "0000",
-		avatar: app.rpc
-			? "https://cdn.discordapp.com/avatars/" +
-			  rpc.user.id +
-			  "/" +
-			  rpc.user.avatar
-			: "/dummy.png",
-	});
-});
-
-ipcMain.on("rpcUpdate", (event, args) => {
-	if (args.audio && app.rpc) {
-		rpc.setActivity({
-			conn: app.rpc,
-			state: args.channel,
-			details: args.title,
-			endTimestamp: new Date(args.end),
-		});
-	} else {
-		rpc.clearActivity();
-	}
-
-	event.reply("connUpdate", {
-		username: app.rpc ? rpc.user.username : "Discord disconnected",
-		discrim: app.rpc ? rpc.user.discriminator : "0000",
-		avatar: app.rpc
-			? "https://cdn.discordapp.com/avatars/" +
-			  rpc.user.id +
-			  "/" +
-			  rpc.user.avatar
-			: "/dummy.png",
-	});
-});
-
 app.on("activate", () => {
 	if (BrowserWindow.getAllWindows().length === 0) createWindow();
 });
 
-app.on("ready", async () => {
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+	app.quit();
+} else {
+	app.on("second-instance", (e, argv) => {
+		// Someone tried to run a second instance, we should focus our window.
+		if (app.win) {
+			if (app.win.isMinimized()) app.win.restore();
+			app.win.focus();
+		}
+
+		if (process.platform !== "darwin") {
+			if (typeof argv !== "string") {
+				const deeplinkingUrl = argv.find((arg) => arg.startsWith("stopify://"));
+				socket.emit("joinPartyAttempt", {
+					discrim: rpc.user.discriminator,
+					pfp:
+						"https://cdn.discordapp.com/avatars/" +
+						rpc.user.id +
+						"/" +
+						rpc.user.avatar,
+					url: deeplinkingUrl,
+					id: rpc.user.id,
+					name: rpc.user.username,
+				});
+			}
+		}
+	});
+}
+
+app.on("ready", async (e) => {
 	if (isDevelopment && !process.env.IS_TEST) {
 		// Install Vue Devtools
 		try {
@@ -160,7 +91,6 @@ app.on("ready", async () => {
 		}
 	}
 	createWindow();
-	rpc.login({ clientId });
 });
 
 if (isDevelopment) {
