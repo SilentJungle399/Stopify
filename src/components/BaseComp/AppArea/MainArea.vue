@@ -1,13 +1,40 @@
 <template>
 	<div @dragover="dragover" class="mainarea">
-		<button
-			class="backbutton"
-			v-show="tab !== 'queue'"
-			@click="switchTab('queue')"
+		<div class="headercont">
+			<button
+				class="backbutton"
+				v-show="$store.state.tab !== 'queue'"
+				@click="switchTab('queue')"
+			>
+				<left></left>
+			</button>
+			<SearchComp ref="search"></SearchComp>
+		</div>
+		<span class="tabtitle">
+			{{
+				$store.state.tab === "queue"
+					? "Queue:"
+					: `Showing results for: ${searchinput.og}.`
+			}}<br />
+			{{
+				$store.state.tab === "search"
+					? searchinput.og === searchinput.cr
+						? ""
+						: `Did you mean: ${searchinput.cr}?`
+					: ""
+			}}
+		</span>
+		<div
+			class="scrollarea"
+			:style="`width: 100%; top: ${
+				searchinput.og
+					? searchinput.og === searchinput.cr
+						? '120px'
+						: '140px'
+					: '120px'
+			}`"
+			v-if="$store.state.tab === 'search'"
 		>
-			<left></left>
-		</button>
-		<div class="scrollarea" style="width: 100%" v-if="tab === 'search'">
 			<div class="searchrestrack" :key="track.url" v-for="track in searchres">
 				<img
 					:src="`https://img.youtube.com/vi/${
@@ -29,7 +56,17 @@
 				</div>
 			</div>
 		</div>
-		<div class="scrollarea" style="width: 100%" v-else-if="tab === 'queue'">
+		<div
+			class="scrollarea"
+			:style="`width: 100%; top: ${
+				searchinput.og
+					? searchinput.og === searchinput.cr
+						? '120px'
+						: '140px'
+					: '120px'
+			}`"
+			v-else-if="$store.state.tab === 'queue'"
+		>
 			<div
 				:id="queue.indexOf(track)"
 				@dragstart="dragstart"
@@ -59,12 +96,15 @@
 				</div>
 			</div>
 		</div>
+		<Members></Members>
 	</div>
 </template>
 
 <script>
 import progress from "@/handlers/progress.js";
 import playicon from "@/assets/svg/Playicon.vue";
+import SearchComp from "@/components/BaseComp/AppArea/SearchComp.vue";
+import Members from "@/components/BaseComp/AppArea/Members.vue";
 import { ipcRenderer } from "electron";
 import left from "@/assets/svg/left-arrow.vue";
 
@@ -73,6 +113,8 @@ export default {
 	components: {
 		playicon,
 		left,
+		SearchComp,
+		Members,
 	},
 	data() {
 		return {
@@ -83,6 +125,10 @@ export default {
 			dragpos: null,
 			curdrag: null,
 			newpos: null,
+			searchinput: {
+				og: null,
+				cr: null,
+			},
 		};
 	},
 	methods: {
@@ -99,8 +145,13 @@ export default {
 			}
 		},
 		switchTab(tab) {
-			this.$store.state.tab = tab;
-			this.tab = tab;
+			this.$store.commit("switchTab", tab);
+			if (tab === "queue") {
+				this.searchinput = {
+					og: null,
+					cr: null,
+				};
+			}
 		},
 		dragover(event) {
 			event.preventDefault();
@@ -184,6 +235,7 @@ export default {
 					this.$store.state.current.audio.duration
 			);
 		},
+		t() {},
 		nextSong() {
 			this.$store.state.current.audio = null;
 			this.$store.commit("progInc", 0);
@@ -198,57 +250,67 @@ export default {
 					this.$store.state.queue.push(this.$store.state.current.data);
 				}
 				this.$store.state.current.data = null;
+			} else if (this.$store.state.queue.length === 0) {
+				this.$store.state.current.data = null;
 			}
 		},
 	},
-
-	sockets: {
-		newSongSearchReturn(data) {
-			console.log("Incoming:", "newSongSearchReturn", data);
-			this.searchres = data.tracks;
-			this.switchTab("search");
-		},
-		newQueue(data) {
-			console.log("Incoming:", "newQueue", data);
-			this.$store.state.queue = data.queue;
-			this.queue = data.queue;
-		},
-		playerUpdate(data) {
-			this.queue = data.player.queue;
-		},
-	},
-	watch: {
-		$store(after, before) {
-			this.queue = this.$store.state.queue;
-		},
-	},
 	mounted() {
-		if (!ipcRenderer.eventNames().includes("searchResult")) {
-			ipcRenderer.on("searchResult", (event, arg) => {
-				console.log("Incoming:", "searchResult", arg);
-				this.searchres = arg.items.filter((a) => a.type === "video");
-				this.switchTab("search");
-			});
-		}
-		if (!ipcRenderer.eventNames().includes("urlReqResult")) {
-			ipcRenderer.on("urlReqResult", (event, arg) => {
-				console.log("Incoming:", "urlReqResult", arg);
-				this.$store.state.current = {
-					audio: new Audio(arg.formats[0].url),
-					data: arg.videoDetails,
-					start: Date.now(),
-				};
-				this.$store.state.current.audio.play();
-				this.$store.state.controls.paused = false;
-				this.handleEvents(this.$store.state.current.audio);
-			});
-		}
+		const comp = this;
+		ipcRenderer.on("searchResult", (event, arg) => {
+			console.log("Incoming:", "searchResult", arg);
+
+			comp.searchres = arg.items.filter((a) => a.type === "video");
+			comp.switchTab("search");
+			comp.searchinput = {
+				og: arg.originalQuery,
+				cr: arg.correctedQuery,
+			};
+		});
+		ipcRenderer.on("urlReqResult", (event, arg) => {
+			console.log("Incoming:", "urlReqResult", arg);
+			comp.$store.state.current = {
+				audio: new Audio(arg.formats[0].url),
+				data: arg.videoDetails,
+				start: Date.now(),
+			};
+			comp.$store.state.current.audio.play();
+			comp.$store.state.controls.paused = false;
+			comp.handleEvents(comp.$store.state.current.audio);
+
+			return;
+
+			if (comp.$store.state.members.length > 0) {
+				arg.members = comp.$store.state.members;
+				ipcRenderer.send("emitPlayedSong", arg);
+			}
+		});
+		ipcRenderer.on("joinFromMid", (event, arg) => {
+			console.log("Incoming:", "joinFromMid", arg);
+			if (comp.$store.state.current.audio) {
+				comp.$store.state.current.audio.pause();
+			}
+			comp.$store.state.current = {
+				audio: new Audio(arg.song.formats[0].url),
+				data: arg.song.videoDetails,
+				start: Date.now(),
+			};
+			comp.$store.state.current.audio.play();
+			comp.$store.state.controls.paused = false;
+			comp.$store.state.current.audio.currentTime =
+				(Date.now() - arg.pos.start) / 1000 + arg.pos.current;
+			comp.handleEvents(comp.$store.state.current.audio);
+		});
+	},
+	created() {
+		ipcRenderer.removeAllListeners("searchResult");
+		ipcRenderer.removeAllListeners("urlReqResult");
 	},
 };
 </script>
 
 <style>
-.mainarea {
+/* .mainarea {
 	background-color: var(--sections);
 	position: absolute;
 	top: 125px;
@@ -258,11 +320,34 @@ export default {
 	width: calc(100% - 435px - 25px);
 	height: calc(100% - 310px);
 	border-radius: 50px 0 0 0;
-}
+} */
 
 .scrollarea {
 	overflow-y: auto;
-	margin-top: 10px;
+	top: 140px;
+	position: absolute;
+	bottom: 20px;
+	right: 0;
+}
+
+.tabtitle {
+	position: absolute;
+	top: 80px;
+	left: 30px;
+	font-size: 20px;
+	color: #cecece;
+}
+
+.headercont {
+	display: flex;
+	position: absolute;
+	top: 0;
+	left: 0;
+	flex-direction: row;
+	width: 100%;
+	align-content: center;
+	justify-content: center;
+	align-items: center;
 }
 
 .draggable {
@@ -274,9 +359,6 @@ export default {
 }
 
 .backbutton {
-	position: absolute;
-	top: 15px;
-	left: 25px;
 	background: none;
 	outline: none;
 	border: none;
@@ -285,6 +367,7 @@ export default {
 	padding: 10px;
 	padding-bottom: 7px;
 	transition: all 0.5s;
+	margin-left: 20px;
 }
 
 .backbutton:hover {

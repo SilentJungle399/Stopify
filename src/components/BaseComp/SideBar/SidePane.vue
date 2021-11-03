@@ -11,7 +11,7 @@ export default {
 </script>
 
 <style>
-.sidepane {
+/* .sidepane {
 	background-color: var(--sections);
 	position: absolute;
 	top: 125px;
@@ -19,5 +19,5 @@ export default {
 	width: 375px;
 	height: calc(100% - 230px);
 	border-radius: 0 50px 0 0;
-}
+} */
 </style>
