@@ -2,7 +2,14 @@ module.exports = {
 	pluginOptions: {
 		electronBuilder: {
 			nodeIntegration: true,
-			customFileProtocol: "stopify://./",
+			customFileProtocol: "./",
+			protocols: [
+				{
+					name: "stopify",
+					schemes: ["stopify"],
+				},
+			],
 		},
 	},
+	productionSourceMap: false,
 };
