@@ -66,7 +66,9 @@ ipcMain.on("emitPlayedSong", (event, data) => {
 });
 
 ipcMain.on("updateEvent", (event, args) => {
+	console.log(args);
 	if (args.audio && app.rpc && rpc.user) {
+		console.log("e");
 		rpc.setActivity({
 			conn: app.rpc,
 			state: args.channel,
